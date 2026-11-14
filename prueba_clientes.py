@@ -50,7 +50,10 @@ try:
     gestor.registrar_cliente(cliente3)
 
 except DatosInvalidosError as error:
-    print("Error controlado:", error)
+    print("Prueba 3 superada: error controlado:", error)
+
+else:
+    print("FALLO: el sistema permitió registrar un cliente sin nombre.")
 
 
 # PRUEBA 4: Buscar un cliente inexistente
@@ -58,7 +61,10 @@ try:
     gestor.buscar_cliente("C999")
 
 except ClienteNoEncontradoError as error:
-    print("Error controlado:", error)
+    print("Prueba 4 superada: error controlado:", error)
+
+else:
+    print("FALLO: el sistema no detectó el cliente inexistente.")
 
 
 # PRUEBA 5: Mostrar clientes registrados
@@ -68,4 +74,4 @@ for informacion in gestor.listar_clientes():
     print(informacion)
     print("-" * 30)
 
-print("Las pruebas finalizaron correctamente.")
+print("Finalizó la ejecución de las pruebas de clientes.")
