@@ -1,4 +1,3 @@
-
 from cliente import Cliente, GestorClientes
 from excepciones import DatosInvalidosError, ClienteNoEncontradoError
 
