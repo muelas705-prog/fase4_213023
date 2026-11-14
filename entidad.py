@@ -1,5 +1,5 @@
-print("actividad colaborativa grupo 213023")
-print("universidad abierta y a distancia")
+print "actividad colaborativa grupo 213023"
+print "universidad abierta y a distancia"
 # tarea 4 grupo 213023
 from abc import ABC, abstractmethod
 
