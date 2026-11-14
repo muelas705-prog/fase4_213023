@@ -16,9 +16,18 @@ class Cliente(Entidad):
             raise DatosInvalidosError("El nombre es obligatorio")
 
         # Validar correo
-        if (not isinstance(correo, str)
-                or correo.count("@") != 1
-                or "." not in correo.split("@")[-1]):
+        if not isinstance(correo, str):
+            raise DatosInvalidosError("El correo no es válido")
+
+        correo = correo.strip()
+
+        if (correo.count("@") != 1
+                or " " in correo
+                or correo.startswith("@")
+                or correo.endswith("@")
+                or "." not in correo.split("@")[1]
+                or correo.split("@")[1].startswith(".")
+                or correo.split("@")[1].endswith(".")):
             raise DatosInvalidosError("El correo no es válido")
 
         # Validar teléfono
@@ -30,7 +39,7 @@ class Cliente(Entidad):
 
         # Encapsulación de los datos personales
         self.__nombre = nombre.strip()
-        self.__correo = correo.strip()
+        self.__correo = correo
         self.__telefono = telefono.strip()
 
     # Implementación del método abstracto
@@ -80,6 +89,14 @@ class GestorClientes:
 
     # Buscar un cliente por identificador
     def buscar_cliente(self, identificador):
+
+        # Validar el identificador de búsqueda
+        if not isinstance(identificador, str) or not identificador.strip():
+            raise DatosInvalidosError(
+                "El identificador de búsqueda es obligatorio"
+            )
+
+        identificador = identificador.strip()
 
         for cliente in self.__clientes:
             if cliente.obtener_identificador() == identificador:
