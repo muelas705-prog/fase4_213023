@@ -1,0 +1,150 @@
+# Importamos la clase abstracta Entidad (archivo entidad.py)
+from entidad import Entidad
+
+# Importamos las excepciones personalizadas (archivo excepciones.py)
+from excepciones import DatosInvalidosError
+from excepciones import ReservaInvalidaError
+from excepciones import OperacionNoPermitidaError
+from excepciones import ServicioNoDisponibleError
+
+
+# Clase Reserva: relaciona un cliente con un servicio
+class Reserva(Entidad):
+
+    # Constructor: recibe el identificador, el cliente, el servicio y la duración
+    def __init__(self, identificador, cliente, servicio, duracion):
+        # Llamamos al constructor de Entidad para guardar el identificador
+        super().__init__(identificador)
+        # El cliente es obligatorio
+        if cliente is None:
+            raise ReservaInvalidaError("La reserva necesita un cliente")
+        # El servicio es obligatorio
+        if servicio is None:
+            raise ReservaInvalidaError("La reserva necesita un servicio")
+        # Validamos la duración y la disponibilidad con el método del servicio
+        servicio.validar_parametros(duracion)
+        # Guardamos los datos como atributos protegidos (encapsulación)
+        self._cliente = cliente
+        self._servicio = servicio
+        self._duracion = duracion
+        # Toda reserva nueva empieza como Pendiente
+        self._estado = "Pendiente"
+        # El costo se calcula al procesar la reserva
+        self._costo_total = 0
+
+    # Devuelve el estado actual de la reserva
+    def obtener_estado(self):
+        return self._estado
+
+    # Devuelve el costo total (es 0 hasta que se procese)
+    def obtener_costo_total(self):
+        return self._costo_total
+
+    # Confirma la reserva: solo se puede si está Pendiente
+    def confirmar(self):
+        # Si no está pendiente, la operación no está permitida
+        if self._estado != "Pendiente":
+            raise OperacionNoPermitidaError("Solo se puede confirmar una reserva pendiente")
+        # Si el servicio ya no está disponible, no se puede confirmar
+        if not self._servicio.esta_disponible():
+            raise ServicioNoDisponibleError("El servicio ya no está disponible")
+        # Cambiamos el estado
+        self._estado = "Confirmada"
+
+    # Cancela la reserva: no se puede si ya fue procesada o cancelada
+    def cancelar(self):
+        # Una reserva procesada o cancelada no se puede cancelar
+        if self._estado == "Procesada" or self._estado == "Cancelada":
+            raise OperacionNoPermitidaError("No se puede cancelar esta reserva")
+        # Cambiamos el estado
+        self._estado = "Cancelada"
+
+    # Procesa la reserva: calcula el costo con IVA. Solo si está Confirmada
+    def procesar(self):
+        # Solo se procesan reservas confirmadas
+        if self._estado != "Confirmada":
+            raise OperacionNoPermitidaError("Solo se puede procesar una reserva confirmada")
+        # Bloque try / except / else / finally
+        try:
+            # Intentamos calcular el costo con IVA
+            costo = self._servicio.calcular_costo_con_iva(self._duracion)
+        except ServicioNoDisponibleError as error:
+            # Encadenamiento de excepciones: "from error" guarda la causa original
+            raise ReservaInvalidaError("No se pudo procesar la reserva") from error
+        else:
+            # Si no hubo errores, guardamos el costo y cambiamos el estado
+            self._costo_total = costo
+            self._estado = "Procesada"
+            return costo
+        finally:
+            # Esto se ejecuta siempre, haya error o no
+            print("Fin del intento de procesar la reserva " + self._identificador)
+
+    # Método exigido por Entidad: devuelve la información de la reserva
+    def obtener_informacion(self):
+        return ("Reserva " + self._identificador
+                + " | Cliente: " + self._cliente.obtener_identificador()
+                + " | Servicio: " + self._servicio.obtener_identificador()
+                + " | Duración: " + str(self._duracion) + " h"
+                + " | Estado: " + self._estado
+                + " | Costo: $" + str(self._costo_total))
+
+
+# Pruebas: solo se ejecutan si corremos este archivo directamente
+if __name__ == "__main__":
+
+    # Importamos las clases de servicios para la prueba
+    from servicios import ReservaSala, AlquilerEquipo
+
+    # Cliente de prueba (solo para este archivo)
+    class ClientePrueba(Entidad):
+        def obtener_informacion(self):
+            return "Cliente " + self._identificador
+
+    # Creamos un cliente y dos servicios
+    cliente = ClientePrueba("CLI-001")
+    sala = ReservaSala("SAL-001", "Innovación", 50000, 20)
+    equipo = AlquilerEquipo("EQU-001", "Proyector HD", 20000, "Audiovisual")
+
+    # Reserva exitosa: crear, confirmar y procesar
+    reserva1 = Reserva("RES-001", cliente, sala, 2)
+    reserva1.confirmar()
+    reserva1.procesar()
+    print(reserva1.obtener_informacion())
+
+    # Error 1: duración inválida al crear la reserva
+    try:
+        Reserva("RES-002", cliente, sala, 20)
+    except DatosInvalidosError as e:
+        print("Error controlado:", e)
+
+    # Error 2: reserva sin cliente
+    try:
+        Reserva("RES-003", None, sala, 2)
+    except ReservaInvalidaError as e:
+        print("Error controlado:", e)
+
+    # Error 3: procesar sin confirmar
+    reserva2 = Reserva("RES-004", cliente, equipo, 3)
+    try:
+        reserva2.procesar()
+    except OperacionNoPermitidaError as e:
+        print("Error controlado:", e)
+
+    # Error 4: cancelar una reserva ya procesada
+    try:
+        reserva1.cancelar()
+    except OperacionNoPermitidaError as e:
+        print("Error controlado:", e)
+
+    # Error 5: el servicio no está disponible al procesar
+    reserva2.confirmar()
+    equipo.cambiar_disponibilidad(False)
+    try:
+        reserva2.procesar()
+    except ReservaInvalidaError as e:
+        print("Error controlado:", e)
+
+    # Cancelación correcta
+    reserva2.cancelar()
+    print(reserva2.obtener_informacion())
